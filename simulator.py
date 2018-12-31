@@ -1,18 +1,31 @@
 from typing import List, NewType, Optional
 from enum import Enum
 
-MAX_BYTE_SIZE = 10
+# A "byte" must be capable of holding between 64 and 100 distinct 
+# values. Presuming a base-2 computer, this corresponds to between 6- 
+# and 10-bit "bytes".
 MIN_BYTE_SIZE = 6
+MAX_BYTE_SIZE = 10
 
+# MIX operations are concerned with the value of a MIX byte: the
+# details of the implementation are transparent as far as a MIX
+# programmer is concerned.
 Byte = NewType('Byte', int)
 
 
 class Sign(Enum):
+    '''
+    Each register and memory cell has a 1-bit sign indicator
+    '''
     POS = 1
     NEG = -1
 
 
 class Comparison(Enum):
+    '''
+    Comparison instructions set the comparison indicator to
+    one of these three states.
+    '''
     LESS = -1
     EQUAL = 0
     GREATER = 1
@@ -20,7 +33,11 @@ class Comparison(Enum):
 
 class MemoryCell:
     ''' 
-    We follow Knuth's convention: memory cells are big-endian.
+    A memory cell consists of a sign bit and a sequence of bytes. We
+    can index into a cell using field specifications. The first field
+    (0) refers to the sign bit. The remaining fields (1:n) refer to
+    the cell's n bytes. In keeping with Knuth's specification, memory
+    cells are big-endian.
     ''' 
     sign: Sign 
     bytes: List[Byte]
@@ -28,6 +45,7 @@ class MemoryCell:
 
     def __init__(self, num_bytes): 
         self.sign = Sign.POS
+        self.num_bytes = num_bytes
         self.init_bytes(num_bytes)
 
 
@@ -59,9 +77,9 @@ class UndefinedRegisterException(Exception):
    pass 
 
 
-class MIXSimulator:
+class Simulator:
     '''
-         
+    Provides a virtual MIX computer.
     '''
     rA: MemoryCell
     rX: MemoryCell
@@ -109,13 +127,20 @@ class MIXSimulator:
 
 
     def __init__(self, byte_size=6):
+        '''
+        Initialize the MIX computer.
+
+        :param byte_size: Size of a byte (in binary bits)
+        '''
         self.byte_size = byte_size 
 
         self.init_machine()
-        self.run()
 
 
     def init_machine(self):
+        '''
+        Initialize machine hardware.
+        '''
         self.overflow_toggle = False
         self.comparison_indicator = Comparison.EQUAL 
         self.init_memory()
@@ -123,6 +148,10 @@ class MIXSimulator:
 
 
     def init_memory(self):
+        '''
+        Initializes machine memory. A MIX computer provides 4000
+        5-byte cells.
+        '''
         memory: List[MemoryCell] = []
 
         for i in range(4000):
@@ -132,6 +161,14 @@ class MIXSimulator:
 
 
     def init_registers(self):
+        '''
+        Initialize machine registers. All registers have a sign bit, 
+        though the J-register behaves as though its sign bit is always
+        positive.
+
+        The A and X registers are both five bytes wide; the remaining 
+        registers are two bytes wide. 
+        '''
         self.rA = MemoryCell(5)
         self.rX = MemoryCell(5)
 
@@ -659,10 +696,3 @@ class MIXSimulator:
         62: CMP6,
         63: CMPX
     }
-
-
-class MIXALParser():
-    '''
-    Compiles MIX assembly into MIX machine code
-    '''
-    None
