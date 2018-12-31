@@ -14,7 +14,7 @@ setuptools.setup(
     url="https://github.com/mitchwagner/mixpy",
     packages=setuptools.find_packages(),
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha"
+        "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Education",
         "Programming Language :: Python :: 3.7",
         "Operating System :: OS Independent",
