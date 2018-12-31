@@ -19,4 +19,9 @@ setuptools.setup(
         "Programming Language :: Python :: 3.7",
         "Operating System :: OS Independent",
     ],
+    install_requires=[
+        mypy==0.650
+        mypy-extensions==0.4.1
+        typed-ast==1.1.1
+    ]
 )
