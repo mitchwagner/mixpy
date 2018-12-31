@@ -1,5 +1,7 @@
 venv/*
 
+tests/
+
 .mypy_cache/*
 __pycache__/*
 
