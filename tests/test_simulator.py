@@ -1,25 +1,63 @@
 import unittest
 
-import simulator 
+from simulator import Simulator, Word, Sign
 
 class TestSimulator(unittest.TestCase):
     
     
     def setUp(self):
-        self.sim = simulator.Simulator()
+        self.sim = Simulator()
+
+
+    def test_get_next_instruction(self):
+        self.assertEqual(self.sim.get_next_instruction().value, 0)
+        self.assertEqual(self.sim.rP.value, 1)
 
 
     def test_get_field_val(self):
-        cell = simulator.MemoryCell(5)
-        cell.bytes = [0, 0, 0, 2, 2]
+        cell = Word()
+        cell.value = 130
 
         self.assertEqual(self.sim.get_field_val(1, 5, cell), 130)
+        self.assertEqual(self.sim.get_field_val(1, 4, cell), 2)
+
+        cell.value = 134762881
+
+        self.assertEqual(self.sim.get_field_val(1, 1, cell), 8)
+        self.assertEqual(self.sim.get_field_val(2, 2, cell), 2)
+        self.assertEqual(self.sim.get_field_val(3, 3, cell), 5)
+        self.assertEqual(self.sim.get_field_val(4, 4, cell), 6)
+        self.assertEqual(self.sim.get_field_val(5, 5, cell), 1)
+
+
+    def test_ADD(self):
+        self.sim.memory[10] = Word(400)
+        self.sim.memory[11] = Word(532)
+        self.sim.memory[12] = Word(-932)
+        self.sim.memory[13] = Word(-20)
+
+        self.sim.ADD(10, (0, 5))
+        self.assertEqual(self.sim.rA.value, 400)
+        self.assertEqual(self.sim.rA.sign, Sign.POS)
+
+        self.sim.ADD(11, (0, 5))
+        self.assertEqual(self.sim.rA.value, 932)
+        self.assertEqual(self.sim.rA.sign, Sign.POS)
+
+        self.sim.ADD(12, (0, 5))
+        self.assertEqual(self.sim.rA.value, 0)
+        self.assertEqual(self.sim.rA.sign, Sign.POS)
+
+        self.sim.ADD(13, (0, 5))
+        self.assertEqual(self.sim.rA.value, 20)
+        self.assertEqual(self.sim.rA.sign, Sign.NEG)
 
 
     def test_parse_instruction(self):
-        cell = simulator.MemoryCell(5)
-        cell.bytes = [8, 2, 5, 6, 1]
+        cell = Word()
+        #parts = self.sim.parse_instruction(cell)
+        self.assertTrue(False)
 
-        parts = self.sim.parse_instruction(cell)
 
+    def test_instruction_dispatch(self):
         self.assertTrue(False)

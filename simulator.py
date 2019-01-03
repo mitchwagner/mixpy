@@ -1,18 +1,18 @@
-from typing import List, NewType, Optional
+'''
+Simulate a MIX computer.
+'''
+
+from typing import List, Tuple, NewType, Optional
 from enum import Enum
 
-# A "byte" must be capable of holding between 64 and 100 distinct 
-# values. Presuming a base-2 computer, this corresponds to between 6- 
-# and 10-bit "bytes".
-MIN_BYTE_SIZE = 6
-MAX_BYTE_SIZE = 10
+# A "byte" must be capable of holding between 64 and 100 distinct
+# values.
+BYTE_MIN = 64
+BYTE_MAX = 100
 
 # MIX operations are concerned with the value of a MIX byte: the
 # details of the implementation are transparent as far as a MIX
 # programmer is concerned.
-Byte = NewType('Byte', int)
-
-
 class Sign(Enum):
     '''
     Each register and memory cell has a 1-bit sign indicator
@@ -31,93 +31,133 @@ class Comparison(Enum):
     GREATER = 1
 
 
-class MemoryCell:
-    ''' 
-    A memory cell consists of a sign bit and a sequence of bytes. We
-    can index into a cell using field specifications. The first field
-    (0) refers to the sign bit. The remaining fields (1:n) refer to
-    the cell's n bytes. In keeping with Knuth's specification, memory
-    cells are big-endian.
-    ''' 
-    sign: Sign 
-    bytes: List[Byte]
-    num_bytes: int
+class Word:
+    '''
+    A full word consists of a sign bit and five bytes. We can index 
+    into a word using field specifications. The first field (0) refers
+    to the sign bit. The remaining fields (1:n) refer to the cell's 
+    n bytes. In keeping with Knuth's specification, words are
+    big-endian.
+    '''
+    sign: Sign
+    value: int
 
-    def __init__(self, num_bytes): 
+    def __init__(self, value=0):
+        self.value = abs(value)
+        if value >= 0:
+            self.sign = Sign.POS
+        if value < 0:
+            self.sign = Sign.NEG
+
+
+class Register:
+    '''
+    Registers consist of two bytes and a sign
+    '''
+    sign: Sign
+    value: int
+
+    def __init__(self):
         self.sign = Sign.POS
-        self.num_bytes = num_bytes
-        self.init_bytes(num_bytes)
+        self.value = 0
 
 
-    def init_bytes(self, num_bytes):
-        bytes: List[Byte] = []
-        for i in range(num_bytes): 
-            bytes.append(Byte(0))
+class IODevice:
+    '''
+    Abstract class for IO devices.
+    '''
+    _block_size: int
+    num_blocks: int
+    blocks: List[Word]
 
-        self.bytes = bytes
+    def __init__(self, num_blocks):
+        blocks: List[Word] = [] 
 
+        for block in num_blocks:
+            blocks.append(Word())
 
-    def store(self, field):
-        None
-
-
-    def add(self, field):
-        None
-
-
-    def subtract(self, field):
-        None
+        self.blocks = blocks
 
 
-class StorageDevice:
-    block_size: int
+class TapeUnit(IODevice):
+    _block_size = 100
+
+
+class DiskUnit(IODevice): 
+    _block_size = 100
+
+
+class CardReader(IODevice):
+    _block_size = 16
+
+
+class CardPunch(IODevice):
+    _block_size = 16
+
+
+class LinePrinter(IODevice):
+    _block_size = 24 
+
+
+class TypewriterTerminal(IODevice):
+    _block_size = 14
+
+
+class PaperTape(IODevice):
+    _block_size = 14 
 
 
 class UndefinedRegisterException(Exception):
-   pass 
+   pass
 
 
 class Simulator:
     '''
     Provides a virtual MIX computer.
     '''
-    rA: MemoryCell
-    rX: MemoryCell
+    rA: Register 
+    rX: Register 
 
-    i1: MemoryCell
-    i2: MemoryCell
-    i3: MemoryCell
-    i4: MemoryCell
-    i5: MemoryCell
-    i6: MemoryCell
+    i1: Register 
+    i2: Register 
+    i3: Register 
+    i4: Register 
+    i5: Register
+    i6: Register
 
-    rJ: MemoryCell
+    rJ: Register
 
-    tape0: Optional[StorageDevice]
-    tape1: Optional[StorageDevice]
-    tape2: Optional[StorageDevice]
-    tape3: Optional[StorageDevice]
-    tape4: Optional[StorageDevice]
-    tape5: Optional[StorageDevice]
-    tape6: Optional[StorageDevice]
-    tape7: Optional[StorageDevice]
+    # Tape and disk storage devices read full words (five bytes and a sign)
+    tape0: Optional[TapeUnit]
+    tape1: Optional[TapeUnit]
+    tape2: Optional[TapeUnit]
+    tape3: Optional[TapeUnit]
+    tape4: Optional[TapeUnit]
+    tape5: Optional[TapeUnit]
+    tape6: Optional[TapeUnit]
+    tape7: Optional[TapeUnit]
 
-    disk8: Optional[StorageDevice]
-    disk9: Optional[StorageDevice]
-    disk10: Optional[StorageDevice]
-    disk11: Optional[StorageDevice]
-    disk12: Optional[StorageDevice]
-    disk13: Optional[StorageDevice]
-    disk14: Optional[StorageDevice]
-    disk15: Optional[StorageDevice]
+    disk0: Optional[DiskUnit]
+    disk1: Optional[DiskUnit]
+    disk2: Optional[DiskUnit]
+    disk3: Optional[DiskUnit]
+    disk4: Optional[DiskUnit]
+    disk5: Optional[DiskUnit]
+    disk6: Optional[DiskUnit]
+    disk7: Optional[DiskUnit]
 
-    card_reader: Optional[StorageDevice]
-    card_punch: Optional[StorageDevice]
-    line_printer: Optional[StorageDevice]
-    tt_terminal: Optional[StorageDevice]
-    paper_tape: Optional[StorageDevice]
+    # These IO devices operate on the basis of character codes:
+    # the sign bit of all words is set to "+".
+    card_reader: Optional[CardReader]
+    card_punch: Optional[CardPunch]
+    line_printer: Optional[LinePrinter]
+    terminal: Optional[TypewriterTerminal]
+    paper_tape: Optional[PaperTape]
 
-    memory: List[MemoryCell]
+    memory: List[Word]
+
+    # Program Counter
+    rP: Register   
 
     byte_size: int
     overflow_toggle: bool 
@@ -126,7 +166,7 @@ class Simulator:
     time = 0
 
 
-    def __init__(self, byte_size=6):
+    def __init__(self, byte_size=64):
         '''
         Initialize the MIX computer.
 
@@ -152,65 +192,114 @@ class Simulator:
         Initializes machine memory. A MIX computer provides 4000
         5-byte cells.
         '''
-        memory: List[MemoryCell] = []
+        memory: List[Word] = []
 
         for i in range(4000):
-            memory.append(MemoryCell(5))
+            memory.append(Word())
 
         self.memory = memory
 
 
     def init_registers(self):
         '''
-        Initialize machine registers. All registers have a sign bit, 
+        Initialize machine registers. All registers have a sign bit,
         though the J-register behaves as though its sign bit is always
         positive.
 
-        The A and X registers are both five bytes wide; the remaining 
-        registers are two bytes wide. 
+        The A and X registers are both five bytes wide; the remaining
+        registers are two bytes wide.
         '''
-        self.rA = MemoryCell(5)
-        self.rX = MemoryCell(5)
+        self.rA = Word()
+        self.rX = Word()
 
-        self.r1 = MemoryCell(2)
-        self.r2 = MemoryCell(2)
-        self.r3 = MemoryCell(2)
-        self.r4 = MemoryCell(2)
-        self.r5 = MemoryCell(2)
-        self.r6 = MemoryCell(2)
+        self.r1 = Word()
+        self.r2 = Word()
+        self.r3 = Word()
+        self.r4 = Word()
+        self.r5 = Word()
+        self.r6 = Word()
 
-        self.rJ = MemoryCell(2)
+        self.rJ = Word()
+        self.rP = Word()
 
 
-    def run(self):
+    def attach_IO_device(self, unit_num: int , device: IODevice):
+        '''
+        :param unit_num: the unit port to attach the device to
+        :param device: the device instance to attach to the simulator 
+        '''
+        None
+        
+
+    def detach_IO_device(self, unit_num): 
+        None
+
+
+    def start(self, input_device=16):
+        '''
+        Loads a boot sequence from the specified input device
+        '''
         # Run the boot sequence
             # Load a single memory unit from the specified storage device
             # into memory
-            # Jump to 0 on the tape device
+            # set Jump location
             # begin 
 
-        # Get first instruction
-        # Repeat next instruction
-        # Where do instructions come from?
-        # You parse the instruction to figure out what to do
-        #   then, you do it
+        self.cycle()
+
         None
 
+
+    def _get_bytes(self, value):
+        quotients = []
+        remainders = []
+
+        # Full words are five bytes long
+        for i in range(5):
+            quotients.append(value)
+            value = value // self.byte_size
+
+        quotients.reverse()
+
+        for q in quotients:
+            remainders.append(q % self.byte_size)
+
+        return remainders
+
     
-    def get_field_val(self, start, end, cell):
+    def get_field_val(self, start, end, word):
         start = start - 1
-        bs = cell.bytes[start:end]
+
+        bs = self._get_bytes(word.value)
+        bs = bs[start:end]
 
         num = 0
         place = 0
         for b in reversed(bs):
-            num = num + b * (2 ** self.byte_size) ** place
+            num = num + b * self.byte_size ** place
             place += 1
+        
+        return num
+    
 
-        return num * cell.sign.value
+    def cycle(self):
+        # TODO: track/increment time
+
+        while True:
+            i = self.get_next_instruction()
+            self.instruction_dispatch(i)
 
 
-    def parse_instruction(self, instruction: MemoryCell):
+    def get_next_instruction(self):
+        '''
+        Gets the next instruction, and increments the program counter
+        '''
+        i: Word = self.memory[self.rP.value]
+        self.rP.value += 1
+        return i 
+
+
+    def parse_instruction(self, instruction: Word):
         sign = instruction.sign 
         A = self.get_field_val(1, 2, instruction)
         I = self.get_field_val(3, 3, instruction)
@@ -220,45 +309,76 @@ class Simulator:
         return ({'sign':sign, 'A':A, 'I':I, 'F':F, 'C':C})
 
 
-    def instruction_dispatch(instruction: MemoryCell):
-        instr_comps = parse_instruction(instruction)
-        code = instr_comps.pop('C')
-        instr_map[code]()
+    def get_field(self, F) -> Tuple[int, int]:
+        return (F // 8, F % 8)
 
 
-    def LDA(self, A, I, F, C):
+    def instruction_dispatch(instruction: Word):
+        parts = parse_instruction(instruction)
+        sign = parts['sign']
+        A = parts['A']
+        I = parts['I']
+        F = get_field(parts['F'])
+        C = parts['C']
+
+        address = A.value * sign.value
+
+        if I == 1:
+            address += i1.value
+
+        elif I == 2:
+            address += i2.value
+
+        elif I == 3:
+            address += i3.value
+
+        elif I == 4:
+            address += i4.value
+
+        elif I == 5:
+            address += i5.value
+
+        elif I == 6:
+            address += i6.value
+
+        # TODO: Check for overflow and throw error if it occurs
+
+        instr_map[C](address=address, F=F)
+
+
+    def LDA(self, address, F):
         raise NotImplementedError 
 
 
-    def LD1(self, i):
+    def LD1(self, address, F):
         raise NotImplementedError 
 
 
-    def LD2(self, i):
+    def LD2(self, address, F):
         raise NotImplementedError 
 
 
-    def LD3(self, i):
+    def LD3(self, address, F):
         raise NotImplementedError 
 
 
-    def LD4(self, i):
+    def LD4(self, address, F):
         raise NotImplementedError 
 
 
-    def LD5(self, i):
+    def LD5(self, address, F):
         raise NotImplementedError 
 
 
-    def LD6(self, i):
+    def LD6(self, address, F):
         raise NotImplementedError 
 
 
-    def LDX(self):
+    def LDX(self, address, F):
         raise NotImplementedError 
 
 
-    def LDAN(self):
+    def LDAN(self, address, F):
         raise NotImplementedError 
 
 
@@ -266,27 +386,27 @@ class Simulator:
         raise NotImplementedError 
 
 
-    def LD1N(self, i):
+    def LD1N(self):
         raise NotImplementedError 
 
 
-    def LD2N(self, i):
+    def LD2N(self):
         raise NotImplementedError 
 
 
-    def LD3N(self, i):
+    def LD3N(self):
         raise NotImplementedError 
 
 
-    def LD4N(self, i):
+    def LD4N(self):
         raise NotImplementedError 
 
 
-    def LD5N(self, i):
+    def LD5N(self):
         raise NotImplementedError 
 
 
-    def LD6N(self, i):
+    def LD6N(self):
         raise NotImplementedError 
 
 
@@ -298,27 +418,27 @@ class Simulator:
         raise NotImplementedError 
 
 
-    def ST1(self, i):
+    def ST1(self):
         raise NotImplementedError 
 
 
-    def ST2(self, i):
+    def ST2(self):
         raise NotImplementedError 
 
 
-    def ST3(self, i):
+    def ST3(self):
         raise NotImplementedError 
 
 
-    def ST4(self, i):
+    def ST4(self):
         raise NotImplementedError 
 
 
-    def ST5(self, i):
+    def ST5(self):
         raise NotImplementedError 
 
 
-    def ST6(self, i):
+    def ST6(self):
         raise NotImplementedError 
 
 
@@ -326,35 +446,78 @@ class Simulator:
         raise NotImplementedError 
 
 
-    def STZ(self):
+    def STZ(self, address, F):
+        raise NotImplementedError 
+
+    # TODO: Overflow
+    def ADD(self, address, F):
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+
+        addend = self.get_field_val(F[0], F[1], word)
+
+        if use_sign:
+            addend = addend * word.sign.value
+
+        self.rA.value = self.rA.value * self.rA.sign.value
+
+        self.rA.value = self.rA.value + addend
+
+        if self.rA.value > 0:
+            self.rA.sign = Sign.POS
+        elif self.rA.value < 0:
+            self.rA.sign = Sign.NEG
+
+        self.rA.value = abs(self.rA.value)
+
+
+    # TODO: Overflow
+    def SUB(self, address, F):
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+
+        subtrahend = self.get_field_val(F[0], F[1], word)
+
+        if use_sign:
+            subtrahend = subtrahend * word.sign.value
+
+        self.rA.value = self.rA.value * self.rA.sign.value
+
+        self.rA.value = self.rA.value + subtrahend 
+
+        if self.rA.value > 0:
+            self.rA.sign = Sign.POS
+        elif self.rA.value < 0:
+            self.rA.sign = Sign.NEG
+
+        self.rA.value = abs(self.rA.value)
+
+
+    def MUL(self, address, F):
         raise NotImplementedError 
 
 
-    def ADD(self):
+    def DIV(self, address, F):
         raise NotImplementedError 
 
 
-    def SUB(self):
+    def ENTA(self, address, F):
         raise NotImplementedError 
 
 
-    def MUL(self):
+    def ENTX(self, address, F):
         raise NotImplementedError 
 
 
-    def DIV(self):
-        raise NotImplementedError 
-
-
-    def ENTA(self):
-        raise NotImplementedError 
-
-
-    def ENTX(self):
-        raise NotImplementedError 
-
-
-    def ENTi(self, i):
+    def ENTi(self, address, F):
         raise NotImplementedError 
 
 
