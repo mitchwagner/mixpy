@@ -161,6 +161,7 @@ class Simulator:
 
     byte_size: int
     overflow_toggle: bool 
+    is_halted: bool
     comparison_indicator: Comparison 
 
     time = 0
@@ -182,6 +183,8 @@ class Simulator:
         Initialize machine hardware.
         '''
         self.overflow_toggle = False
+        self.is_halted = False
+        self.time = 0
         self.comparison_indicator = Comparison.EQUAL 
         self.init_memory()
         self.init_registers()
@@ -247,8 +250,6 @@ class Simulator:
 
         self.cycle()
 
-        None
-
 
     def _get_bytes(self, value):
         quotients = []
@@ -285,7 +286,7 @@ class Simulator:
     def cycle(self):
         # TODO: track/increment time
 
-        while True:
+        while not self.is_halted:
             i = self.get_next_instruction()
             self.instruction_dispatch(i)
 
@@ -343,71 +344,288 @@ class Simulator:
 
         # TODO: Check for overflow and throw error if it occurs
 
-        instr_map[C](address=address, F=F)
+        self.instr_map[C](address=address, F=F)
 
 
     def LDA(self, address, F):
-        raise NotImplementedError 
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            self.rA.sign = word.sign
+        else:
+            self.rA.sign = Sign.POS
+
+        self.rA.value = self.get_field_val(F[0], F[1], word)
 
 
     def LD1(self, address, F):
-        raise NotImplementedError 
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            self.i1.sign = word.sign
+        else:
+            self.i1.sign = Sign.POS
+
+        self.i1.value = self.get_field_val(F[0], F[1], word)
+
 
 
     def LD2(self, address, F):
-        raise NotImplementedError 
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            self.i2.sign = word.sign
+        else:
+            self.i2.sign = Sign.POS
+
+        self.i2.value = self.get_field_val(F[0], F[1], word)
 
 
     def LD3(self, address, F):
-        raise NotImplementedError 
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            self.i3.sign = word.sign
+        else:
+            self.i3.sign = Sign.POS
+
+        self.i3.value = self.get_field_val(F[0], F[1], word)
 
 
     def LD4(self, address, F):
-        raise NotImplementedError 
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            self.i4.sign = word.sign
+        else:
+            self.i4.sign = Sign.POS
+
+        self.i4.value = self.get_field_val(F[0], F[1], word)
 
 
     def LD5(self, address, F):
-        raise NotImplementedError 
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            self.i5.sign = word.sign
+        else:
+            self.i5.sign = Sign.POS
+
+        self.i5.value = self.get_field_val(F[0], F[1], word)
 
 
     def LD6(self, address, F):
-        raise NotImplementedError 
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            self.i6.sign = word.sign
+        else:
+            self.i6.sign = Sign.POS
+
+        self.i6.value = self.get_field_val(F[0], F[1], word)
 
 
     def LDX(self, address, F):
-        raise NotImplementedError 
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            self.rX.sign = word.sign
+        else:
+            self.rX.sign = Sign.POS
+
+        self.rX.value = self.get_field_val(F[0], F[1], word)
 
 
     def LDAN(self, address, F):
-        raise NotImplementedError 
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            if word.sign == Sign.POS:
+                self.rA.sign = Sign.NEG
+            else:
+                self.rA.sign = Sign.POS
+        else:
+            self.rA.sign = Sign.NEG
+
+        self.rA.value = self.get_field_val(F[0], F[1], word)
 
 
-    def LDXN(self):
-        raise NotImplementedError 
+    def LDXN(self, address, F):
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            if word.sign == Sign.POS:
+                self.rX.sign = Sign.NEG
+            else:
+                self.rX.sign = Sign.POS
+        else:
+            self.rX.sign = Sign.NEG
+
+        self.rX.value = self.get_field_val(F[0], F[1], word)
 
 
-    def LD1N(self):
-        raise NotImplementedError 
+    def LD1N(self, address, F):
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            if word.sign == Sign.POS:
+                self.i1.sign = Sign.NEG
+            else:
+                self.i1.sign = Sign.POS
+        else:
+            self.i1.sign = Sign.NEG
+
+        self.i1.value = self.get_field_val(F[0], F[1], word)
 
 
-    def LD2N(self):
-        raise NotImplementedError 
+    def LD2N(self, address, F):
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            if word.sign == Sign.POS:
+                self.i2.sign = Sign.NEG
+            else:
+                self.i2.sign = Sign.POS
+        else:
+            self.i2.sign = Sign.NEG
+
+        self.i2.value = self.get_field_val(F[0], F[1], word)
 
 
-    def LD3N(self):
-        raise NotImplementedError 
+    def LD3N(self, address, F):
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            if word.sign == Sign.POS:
+                self.i3.sign = Sign.NEG
+            else:
+                self.i3.sign = Sign.POS
+        else:
+            self.i3.sign = Sign.NEG
+
+        self.i3.value = self.get_field_val(F[0], F[1], word)
 
 
-    def LD4N(self):
-        raise NotImplementedError 
+    def LD4N(self, address, F):
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            if word.sign == Sign.POS:
+                self.i4.sign = Sign.NEG
+            else:
+                self.i4.sign = Sign.POS
+        else:
+            self.i4.sign = Sign.NEG
+
+        self.i4.value = self.get_field_val(F[0], F[1], word)
 
 
-    def LD5N(self):
-        raise NotImplementedError 
+    def LD5N(self, address, F):
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            if word.sign == Sign.POS:
+                self.i5.sign = Sign.NEG
+            else:
+                self.i5.sign = Sign.POS
+        else:
+            self.i5.sign = Sign.NEG
+
+        self.i5.value = self.get_field_val(F[0], F[1], word)
 
 
-    def LD6N(self):
-        raise NotImplementedError 
+    def LD6N(self, address, F):
+        word = self.memory[address] 
+
+        use_sign = False
+        if F[0] == 0:
+            F = (1, F[1])
+            use_sign = True
+        
+        if use_sign:
+            if word.sign == Sign.POS:
+                self.i6.sign = Sign.NEG
+            else:
+                self.i6.sign = Sign.POS
+        else:
+            self.i6.sign = Sign.NEG
+
+        self.i6.value = self.get_field_val(F[0], F[1], word)
 
 
     def STA(self):
@@ -449,8 +667,12 @@ class Simulator:
     def STZ(self, address, F):
         raise NotImplementedError 
 
+
     # TODO: Overflow
     def ADD(self, address, F):
+        '''
+        Add the field from the specified address to register A
+        '''
         word = self.memory[address] 
 
         use_sign = False
@@ -477,6 +699,9 @@ class Simulator:
 
     # TODO: Overflow
     def SUB(self, address, F):
+        '''
+        Subtract the field from the specified address to register A
+        '''
         word = self.memory[address] 
 
         use_sign = False
@@ -500,7 +725,7 @@ class Simulator:
 
         self.rA.value = abs(self.rA.value)
 
-
+    # TODO: Overflow
     def MUL(self, address, F):
         raise NotImplementedError 
 
@@ -758,11 +983,26 @@ class Simulator:
 
 
     def NOP(self):
-        raise NotImplementedError 
+        '''
+        Do nothing
+        '''
+        None
 
 
     def HLT(self):
-        raise NotImplementedError 
+        '''
+        Pauses a machine; when restarted, the effect is equivalent to
+        a NOP instruction.
+        '''
+        self.is_halted = True
+
+
+    def restart(self):
+        '''
+        Restart a halted machine
+        '''
+        self.is_halted = False
+        self.cycle()
 
 
     def IN(self):
@@ -792,7 +1032,7 @@ class Simulator:
     def CHAR(self):
         raise NotImplementedError 
 
-
+    # Map instruction codes to the function implementing each instruction
     instr_map = {
         0: NOP,
         1: ADD,
@@ -858,4 +1098,72 @@ class Simulator:
         61: CMP5,
         62: CMP6,
         63: CMPX
+    }
+
+    # Map instruction codes to the length of time each instruction takes
+    time_map = {
+        0: 1,
+        1: 2,
+        2: 2,
+        3: 10,
+        4: 12,
+        5: 10,
+        6: 2,
+        7: 1, # TODO: Special
+        8: 2,
+        9: 2,
+        10: 2,
+        11: 2,
+        12: 2,
+        13: 2,
+        14: 2,
+        15: 2,
+        16: 2,
+        17: 2,
+        18: 2,
+        19: 2,
+        20: 2,
+        21: 2,
+        22: 2,
+        23: 2,
+        24: 2,
+        25: 2,
+        26: 2,
+        27: 2,
+        28: 2,
+        29: 2,
+        30: 2,
+        31: 2,
+        32: 2,
+        33: 2,
+        34: 1,
+        35: 1, # TODO: Special
+        36: 1, # TODO: Special
+        37: 1, # TODO: Special
+        38: 1,
+        39: 1,
+        40: 1,
+        41: 1,
+        42: 1,
+        43: 1,
+        44: 1,
+        45: 1,
+        46: 1,
+        47: 1,
+        48: 1,
+        49: 1,
+        50: 1,
+        51: 1,
+        52: 1,
+        53: 1,
+        54: 1,
+        55: 1,
+        56: 2,
+        57: 2,
+        58: 2,
+        59: 2,
+        60: 2,
+        61: 2,
+        62: 2,
+        63: 2 
     }
