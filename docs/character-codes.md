@@ -1,6 +1,7 @@
 MIX follows the following character specification:
 
 | Code | Character |  
+| ---- | --------- |
 | 00   | Space     |
 | 01   | A         |
 | 02   | B         |
