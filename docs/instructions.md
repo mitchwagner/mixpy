@@ -30,69 +30,69 @@ Knuth utilizes the following additional shorthands:
 Following is a list of the 64 instructions that Knuth provides for in his
 specification.
 
-| Name | Op Code | Description  |
-| ---- | ------- | ------------ |
-| NOP  | 0       | No operation |
-| ADD  | 1       |              |
-| SUB  | 2       |              |
-| MUL  | 3       |              |
-| DIV  | 4       |              |
-| Special     | 5       |              |
-| SLA, SRA, SLAX, SRAX, SLC, SRC | 6       |              |
-| MOVE     | 7       |              |
-| LDA     | 8       |              |
-| LD1     | 9      |              |
-| LD2     | 10      |              |
-| LD3     | 11      |              |
-| LD4     | 12      |              |
-| LD5     | 13      |              |
-| LD6     | 14      |              |
-| LDX     | 15      |              |
-| LDAN     | 16      |              |
-| LD1N     | 17      |              |
-| LD2N     | 18      |              |
-| LD3N     | 19      |              |
-| LD4N     | 20      |              |
-| LD5N     | 21      |              |
-| LD6N     | 22      |              |
-| LDXN     | 23      |              |
-| STA     | 24      |              |
-| ST1     | 25      |              |
-| ST2     | 26      |              |
-| ST3     | 27      |              |
-| ST4     | 28      |              |
-| ST5     | 29      |              |
-| ST6     | 30      |              |
-| STX     | 31      |              |
-| STJ     | 32      |              |
-| STZ     | 33      |              |
-| JBUS     | 34      |              |
-| IOC     | 35      |              |
-| IN     | 36      |              |
-| OUT     | 37      |              |
-| JRED     | 38      |              |
-| JMP, JSJ, JOV, JNOV     | 39      |              |
-| JA     | 40      |              |
-| J1     | 41      |              |
-| J2     | 42      |              |
-| J3     | 43      |              |
-| J4     | 44      |              |
-| J5     | 45      |              |
-| J6     | 46      |              |
-| JX     | 47      |              |
-| INCA, DECA, ENTA, ENNA     | 48      |              |
-| INC1, DEC1, ENT1, ENN1     | 49      |              |
-| INC2, DEC2, ENT2, ENN2     | 50      |              |
-| INC3, DEC3, ENT3, ENN3     | 51      |              |
-| INC4, DEC4, ENT4, ENN4     | 52      |              |
-| INC5, DEC5, ENT5, ENN5    | 53      |              |
-| INC6, DEC6, ENT6, ENN6    | 54      |              |
-| INCX, DECX, ENTX, ENNX      | 55      |              |
-| CMPA, FCMP     | 56      |              |
-| CMP1     | 57      |              |
-| CMP2     | 58      |              |
-| CMP3     | 59      |              |
-| CMP4     | 60      |              |
-| CMP5     | 61      |              |
-| CMP6     | 62      |              |
-| CMPX     | 63      |              |
+| Op Code | Name | Description |
+| ------- | ---- | ----------- |
+| 00      | NOP  | |
+| 01      | ADD  | |
+| 02      | SUB  | |
+| 03      | MUL  | |
+| 04      | DIV  | |
+| 05      | NUM, CHAR, HLT | |
+| 06      | SLA, SRA, SLAX, SRAX, SLC, SRC | |
+| 07      | MOVE | |
+| 08      | LDA  | |
+| 09      | LD1  | |
+| 10      | LD2  | |
+| 11      | LD3  | |
+| 12      | LD4  | |
+| 13      | LD5  | |
+| 14      | LD6  | |
+| 15      | LDX  | |
+| 16      | LDAN | |
+| 17      | LD1N | |
+| 18      | LD2N | |
+| 19      | LD3N | |
+| 20      | LD4N | |
+| 21      | LD5N | |
+| 22      | LD6N | |
+| 23      | LDXN | |
+| 24      | STA  | |
+| 25      | ST1  | |
+| 26      | ST2  | |
+| 27      | ST3  | |
+| 28      | ST4  | |
+| 29      | ST5  | |
+| 30      | ST6  | |
+| 31      | STX  | |
+| 32      | STJ  | |
+| 33      | STZ  | |
+| 34      | JBUS | |
+| 35      | IOC  | |
+| 36      | IN   | |
+| 37      | OUT  | |
+| 38      | JRED | |
+| 39      | JMP, JSJ, JOV, JNOV | |
+| 40      | JA   | |
+| 41      | J1   | |
+| 42      | J2   | |
+| 43      | J3   | |
+| 44      | J4   | |
+| 45      | J5   | |
+| 46      | J6   | |
+| 47      | JX   | |
+| 48      | INCA, DECA, ENTA, ENNA | |
+| 49      | INC1, DEC1, ENT1, ENN1 | |
+| 50      | INC2, DEC2, ENT2, ENN2 | |
+| 51      | INC3, DEC3, ENT3, ENN3 | |
+| 52      | INC4, DEC4, ENT4, ENN4 | |
+| 53      | INC5, DEC5, ENT5, ENN5 | |
+| 54      | INC6, DEC6, ENT6, ENN6 | |
+| 55      | INCX, DECX, ENTX, ENNX | |
+| 56      | CMPA, FCMP | |
+| 57      | CMP1 | |
+| 58      | CMP2 | |
+| 59      | CMP3 | |
+| 60      | CMP4 | |
+| 61      | CMP5 | |
+| 62      | CMP6 | |
+| 63      | CMPX | |
