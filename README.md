@@ -7,12 +7,15 @@ assembler for the MIX Assembly Language (MIXAL).
 
 ## Development Plan 
 
-The initial scope of this project does not extend to fully emulating a
-specific architectural design. That is, accurately specifying a
-pipeline and its fetch/execute cycle, enforcing the distinction
-between a control unit and an ALU, etc., are not of predominant
-concern. However, future releases may broaden the the scope of the
-project to accurate representation of such lower-level details.
+MIX is an instruction set architecture; Knuth does not express a
+canonical microarchitecture for its implementation. As such, the scope
+of this project is restricted to simulation, rather than emulation,
+insofar as the two remain distinguished. That is to say, the
+specification of an inspectable pipeline and its fetch/execute cycle,
+the maintenance of a separation between a control unit and an ALU,
+etc., are not of this project's concern. Such low-level details,
+though intellectually interesting, are immaterial to the consideration
+of MIX itself.
 
 In the first iteration of the simulated machine, the act of reading or
 writing to an external device will be presented as a blocking
@@ -23,3 +26,6 @@ of times) an IO operation will take to complete. Writing and reading
 will still occur instantaneously in the background, but this
 additional feature will provide a means of exposing incorrect programs
 that read or write at inappropriate junctures.
+
+## Contribution Guidelines
+- Methods should be declared/implemented before they are used 
