@@ -34,9 +34,9 @@ that read or write at inappropriate junctures.
 ```python
 def foo():
     ...
-    bar():
+    bar()
     ...
-    baz():
+    baz()
     ...
 
 def bar():
