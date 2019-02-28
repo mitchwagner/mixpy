@@ -28,4 +28,25 @@ additional feature will provide a means of exposing incorrect programs
 that read or write at inappropriate junctures.
 
 ## Contribution Guidelines
-- Methods should be declared/implemented before they are used 
+- Function should be implemented, as much as possible, in
+  "call-stack order", e.g.:
+
+```python
+def foo():
+    ...
+    bar():
+    ...
+    baz():
+    ...
+
+def bar():
+    ...
+    a()
+    ...
+
+def a():
+    ...
+
+def baz()
+    ...
+```
