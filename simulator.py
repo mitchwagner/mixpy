@@ -406,7 +406,7 @@ class Simulator:
         sign = parsed_instruction['sign']
         A = parsed_instruction['A']
         I = parsed_instruction['I']
-        F = self.get_field(parsed_instructions['F'])
+        F = parsed_instructions['F']
         C = parsed_instructions['C']
 
         address = A.value * sign.value
@@ -422,7 +422,7 @@ class Simulator:
         self.instr_map[C](**params)
 
 
-    def get_field(self, F) -> Tuple[int, int]:
+    def get_field_specification(self, F) -> Tuple[int, int]:
         return (F // 8, F % 8)
 
 
@@ -479,6 +479,8 @@ class Simulator:
         word = self.memory[address]
         use_sign = False
 
+        F = self.get_field_specification(F)
+
         if F[0] == 0:
             F = (1, F[1])
             use_sign = True
@@ -516,8 +518,10 @@ class Simulator:
         register.
         '''
         word = self.memory[address] 
-
         use_sign = False
+
+        F = self.get_field_specification(F)
+
         if F[0] == 0:
             F = (1, F[1])
             use_sign = True
@@ -565,6 +569,8 @@ class Simulator:
         '''
 
         # 0) Figure out what to do about the sign 
+
+        F = self.get_field_specification(F)
 
         if F[0] == 0:
             F = (1, F[1])
@@ -616,8 +622,9 @@ class Simulator:
         Add the field from the specified address to register A
         '''
         word = self.memory[address] 
-
         use_sign = False
+
+        F = self.get_field_specification(F)
         if F[0] == 0:
             F = (1, F[1])
             use_sign = True
@@ -645,8 +652,10 @@ class Simulator:
         Subtract the field from the specified address to register A
         '''
         word = self.memory[address] 
-
         use_sign = False
+
+        F = self.get_field_specification(F)
+
         if F[0] == 0:
             F = (1, F[1])
             use_sign = True
@@ -691,27 +700,31 @@ class Simulator:
         }
 
         operation_map = {
-            F 
+            '0': self.INC,
+            '1': self.DEC,
+            '2': self.ENT,
+            '3': self.ENN,
         }
 
-        # Switch on C to get the register
-        # Switch on F to get the operation
+        register = register_map['C']
+        op = operation_map['F']
+
+        op(register, address, F)
+
+
+    def INC(self, register, address, F) -> None:
         raise NotImplementedError 
 
 
-    def INC(self, register, address, F, C) -> None:
+    def DEC(self, register, address, F) -> None:
         raise NotImplementedError 
 
 
-    def DEC(self, register, address, F, C) -> None:
+    def ENT(self, register, address, F) -> None:
         raise NotImplementedError 
 
 
-    def ENT(self, register, address, F, C) -> None:
-        raise NotImplementedError 
-
-
-    def ENN(self, register, address, F, C) -> None:
+    def ENN(self, register, address, F) -> None:
         raise NotImplementedError 
 
 
@@ -1088,4 +1101,63 @@ class Simulator:
         61: lambda _: 2,
         62: lambda _: 2,
         63: lambda _: 2,
+    }
+
+    character_code_map = {
+        0: ' ',
+        1: 'A',
+        2: 'B',
+        3: 'C',
+        4: 'D',
+        5: 'E',
+        6: 'F',
+        7: 'G',
+        8: 'H',
+        9: 'I',
+        10: 'Δ',
+        11: 'J',
+        12: 'K',
+        13: 'L',
+        14: 'M',
+        15: 'N',
+        16: 'O',
+        17: 'P',
+        18: 'Q',
+        19: 'R',
+        20: 'Σ',
+        21: 'Π',
+        22: 'S',
+        23: 'T',
+        24: 'U',
+        25: 'V',
+        26: 'W',
+        27: 'X',
+        28: 'Y',
+        29: 'Z',
+        30: '0',
+        31: '1',
+        32: '2',
+        33: '3',
+        34: '4',
+        35: '5',
+        36: '6',
+        37: '7',
+        38: '8',
+        39: '9',
+        40: '.',
+        41: ',',
+        42: '(',
+        43: ')',
+        44: '+',
+        45: '-',
+        46: '*',
+        47: '/',
+        48: '=',
+        49: '$',
+        50: '<',
+        51: '>',
+        52: '@',
+        53: ';',
+        54: ':',
+        55: "'",
     }

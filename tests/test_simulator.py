@@ -36,11 +36,11 @@ class TestSimulator(unittest.TestCase):
 
         test_register = Register()
 
-        self.sim.LD(test_register, 43, (0, 5))
+        self.sim.LD(test_register, 43, 5)
         self.assertEqual(test_register.value, 300)
         self.assertEqual(test_register.sign, Sign.POS)
 
-        self.sim.LD(test_register, 86, (0, 5))
+        self.sim.LD(test_register, 86, 5)
         self.assertEqual(test_register.value, 30)
         self.assertEqual(test_register.sign, Sign.NEG)
 
@@ -51,11 +51,11 @@ class TestSimulator(unittest.TestCase):
 
         test_register = Register()
 
-        self.sim.LDN(test_register, 75, (0, 5))
+        self.sim.LDN(test_register, 75, 5)
         self.assertEqual(test_register.value, 56)
         self.assertEqual(test_register.sign, Sign.NEG)
 
-        self.sim.LDN(test_register, 92, (0, 5))
+        self.sim.LDN(test_register, 92, 5)
         self.assertEqual(test_register.value, 4000)
         self.assertEqual(test_register.sign, Sign.POS)
 
@@ -85,27 +85,27 @@ class TestSimulator(unittest.TestCase):
         test_register = Register(5)
         test_register.value = 102531648 
 
-        self.sim.ST(test_register, 0, (0, 5))
+        self.sim.ST(test_register, 0, 5)
         self.assertEqual(self.sim.memory[0].value, 102531648)
         self.assertEqual(self.sim.memory[0].sign, Sign.POS)
 
-        self.sim.ST(test_register, 1, (1, 5))
+        self.sim.ST(test_register, 1, 13)
         self.assertEqual(self.sim.memory[1].value, 102531648)
         self.assertEqual(self.sim.memory[1].sign, Sign.NEG)
 
-        self.sim.ST(test_register, 2, (5, 5))
+        self.sim.ST(test_register, 2, 45)
         self.assertEqual(self.sim.memory[2].value, 17314048)
         self.assertEqual(self.sim.memory[2].sign, Sign.NEG)
 
-        self.sim.ST(test_register, 3, (2, 2))
+        self.sim.ST(test_register, 3, 18)
         self.assertEqual(self.sim.memory[3].value, 16789765)
         self.assertEqual(self.sim.memory[3].sign, Sign.NEG)
 
-        self.sim.ST(test_register, 4, (2, 3))
+        self.sim.ST(test_register, 4, 19)
         self.assertEqual(self.sim.memory[4].value, 19136773)
         self.assertEqual(self.sim.memory[4].sign, Sign.NEG)
 
-        self.sim.ST(test_register, 5, (0, 1))
+        self.sim.ST(test_register, 5, 1)
         self.assertEqual(self.sim.memory[5].value, 536837)
         self.assertEqual(self.sim.memory[5].sign, Sign.POS)
 
@@ -116,19 +116,19 @@ class TestSimulator(unittest.TestCase):
         self.sim.memory[12] = Word(-932)
         self.sim.memory[13] = Word(-20)
 
-        self.sim.ADD(10, (0, 5))
+        self.sim.ADD(10, 5)
         self.assertEqual(self.sim.rA.value, 400)
         self.assertEqual(self.sim.rA.sign, Sign.POS)
 
-        self.sim.ADD(11, (0, 5))
+        self.sim.ADD(11, 5)
         self.assertEqual(self.sim.rA.value, 932)
         self.assertEqual(self.sim.rA.sign, Sign.POS)
 
-        self.sim.ADD(12, (0, 5))
+        self.sim.ADD(12, 5)
         self.assertEqual(self.sim.rA.value, 0)
         self.assertEqual(self.sim.rA.sign, Sign.POS)
 
-        self.sim.ADD(13, (0, 5))
+        self.sim.ADD(13, 5)
         self.assertEqual(self.sim.rA.value, 20)
         self.assertEqual(self.sim.rA.sign, Sign.NEG)
 
