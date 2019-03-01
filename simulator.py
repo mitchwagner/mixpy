@@ -50,13 +50,7 @@ class Word:
             self.sign = Sign.NEG
 
 
-# TODO: At the moment, I'm going to be enforcing the size of the
-# register (A and X vs. the Is and J) in the simulator. It would be
-# better to abstract that functionality and put it here. In fact, it's
-# not necessarily a good idea to implement in the simulator as a first
-# approximation.
-
-# Note: the J register behaves as if it is always positive.
+# TODO: the J register behaves as if it is always positive.
 class Register:
     '''
     There are two register variants: five-byte registers and two-byte
@@ -64,11 +58,15 @@ class Register:
     '''
     sign: Sign
     value: int
+    num_bytes: int
 
 
-    def __init__(self):
+    def __init__(self, num_bytes=5):
         self.sign = Sign.POS
         self.value = 0
+
+        # Number of bytes the register comprises 
+        self.num_bytes = num_bytes
 
 
 class IODevice:
@@ -259,15 +257,15 @@ class Simulator:
         '''
 
         self.registers = {
-            "A": Register(),
-            "X": Register(),
-            "J": Register(),
-            1 : Register(),
-            2 : Register(),
-            3 : Register(),
-            4 : Register(),
-            5 : Register(),
-            6 : Register()
+            'A': Register(5),
+            'X': Register(5),
+            'J': Register(2),
+            1 : Register(2),
+            2 : Register(2),
+            3 : Register(2),
+            4 : Register(2),
+            5 : Register(2),
+            6 : Register(2)
         }
 
         self.rA = self.registers['A']
@@ -337,15 +335,10 @@ class Simulator:
         bs = self._get_bytes(word.value)
         bs = bs[start:end]
 
-        num = 0
-        place = 0
-        for b in reversed(bs):
-            num = num + b * self.max_byte_size ** place
-            place += 1
-        
-        return num
+        return self._bytes_to_val(bs)
 
 
+    # TODO: change to "val_to_bytes"
     def _get_bytes(self, value):
         '''
         Transform a (positive) integer value into a list of bytes 
@@ -364,6 +357,17 @@ class Simulator:
             remainders.append(q % self.max_byte_size)
 
         return remainders
+
+
+    def _bytes_to_val(self, bs):
+        val = 0
+        place = 0
+
+        for b in reversed(bs):
+            val = val + b * self.max_byte_size ** place
+            place += 1
+
+        return val
 
 
     def increment_time(self, parsed_instruction) -> None:
@@ -443,15 +447,34 @@ class Simulator:
         :param unit_num: the port of the unit to detach
         '''
         None
-        
-    
+
+
+    def LD_dispatch(self, address, F, C) -> None:
+        '''
+        Execute a LD instruction with the proper register
+        '''
+        register_map = {
+            '8': self.registers['A'],
+            '9': self.registers['1'],
+            '10': self.registers['2'],
+            '11': self.registers['3'],
+            '12': self.registers['4'],
+            '13': self.registers['5'],
+            '14': self.registers['6'],
+            '15': self.registers['X']
+        }
+
+        LD(register_map[C], address, F)
+       
+
     # TODO: Do we need all parameters (C) here?
     # TODO: We could use kwargs for ultimate flexibility. Investigate
     # whether or not every instruction needs all or the same set of
     # parameters 
     def LD(self, register, address, F) -> None:
         '''
-        LD instructions 
+        The contents stored in the specified field of the specified
+        memory address are loaded into the specified register.
         '''
         word = self.memory[address]
         use_sign = False
@@ -468,14 +491,30 @@ class Simulator:
         register.value = self.get_field_val(F[0], F[1], word)
 
 
-    def LD_dispatch(self, address, F, C) -> None:
+    def LDN_dispatch(self, address, F, C) -> None:
         '''
-        Execute a LD instruction with the proper register
+        Execute a LDN instruction with the proper register
         '''
-        None
+        register_map = {
+            '16': self.registers['A'],
+            '17': self.registers['1'],
+            '18': self.registers['2'],
+            '19': self.registers['3'],
+            '20': self.registers['4'],
+            '21': self.registers['5'],
+            '22': self.registers['6'],
+            '23': self.registers['X']
+        }
+
+        LDN(register_map[C], address, F)
 
 
     def LDN(self, register, address, F) -> None:
+        '''
+        The negation of the contents stored in the specified field of
+        the specified memory address are loaded into the specified
+        register.
+        '''
         word = self.memory[address] 
 
         use_sign = False
@@ -494,29 +533,80 @@ class Simulator:
         register.value = self.get_field_val(F[0], F[1], word)
 
 
-    def LDN_dispatch(self, address, F, C) -> None:
-        '''
-        Execute a LDN instruction with the proper register
-        '''
-        raise NotImplementedError 
-
-
-    def ST(self, register, address, F, C) -> None:
-        raise NotImplementedError 
-
-
     def ST_dispatch(self, address, F, C) -> None:
         '''
         Execute a ST instruction with the proper register
         '''
-        None
+        register_map = {
+            '24': self.registers['A'],
+            '25': self.registers['1'],
+            '26': self.registers['2'],
+            '27': self.registers['3'],
+            '28': self.registers['4'],
+            '29': self.registers['5'],
+            '30': self.registers['6'],
+            '31': self.registers['X']
+        }
+
+        ST(register_map[C], address, F)
+
+
+    def ST(self, register, address, F) -> None:
+        '''
+        The contents the specified register replace the specified
+        field of the specified address.
+
+        The number of bytes in the field is taken from the right-hand
+        portion of the register and shifted left if necessary to be
+        inserted in the proper field at the address location.
+
+        When storing from the index registers, Bytes 1, 2, and 3 are
+        set to zero. 
+        '''
+
+        # 0) Figure out what to do about the sign 
+
+        if F[0] == 0:
+            F = (1, F[1])
+            self.memory[address].sign = register.sign
+
+        # 1) Get the bytes of the register and memory contents
+        reg_bytes = self._get_bytes(register.value)
+        mem_bytes = self._get_bytes(self.memory[address].value)
+        
+        num_bytes_needed = 1 + F[1] - F[0]
+
+        # "Shift" by taking the requisite number of bytes off the back
+        reg_bytes = reg_bytes[-1 * num_bytes_needed:]
+
+        # Construct a new value based on the field specification
+        new_bytes = \
+            mem_bytes[:F[0] - 1] + \
+            reg_bytes + \
+            mem_bytes[F[1]:]
+
+        # Convert the bytes into a value and store the value
+        value = self._bytes_to_val(new_bytes)
+
+        self.memory[address].value = value
 
 
     def STJ(self, address, F, C) -> None:
+        '''
+        Same as ST, except that rJ is stored, and its sign is always
+        positive.
+
+        With STJ, the normal field specification for F is (0:2), not
+        (0:5)
+        '''
         raise NotImplementedError 
 
 
     def STZ(self, address, F, C) -> None:
+        '''
+        Same as ST, except that plus zero is stored. That is, the
+        specified field of the specified address is cleared to zero. 
+        '''
         raise NotImplementedError 
 
 
@@ -587,7 +677,23 @@ class Simulator:
         raise NotImplementedError 
 
 
+    # TODO: this F is NOT a field specification
     def address_transfer_dispatch(self, address, F, C):
+        register_map = {
+            '48': self.registers['A'],
+            '49': self.registers[1],
+            '50': self.registers[2],
+            '51': self.registers[3],
+            '52': self.registers[4],
+            '53': self.registers[5],
+            '54': self.registers[6],
+            '55': self.registers['X'],
+        }
+
+        operation_map = {
+            F 
+        }
+
         # Switch on C to get the register
         # Switch on F to get the operation
         raise NotImplementedError 

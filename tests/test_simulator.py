@@ -60,6 +60,56 @@ class TestSimulator(unittest.TestCase):
         self.assertEqual(test_register.sign, Sign.POS)
 
 
+    def testST(self):
+        '''
+        Test the ST function using Knuth's examples from TAoCP. 
+        '''
+
+        print(self.sim._bytes_to_val([1,2,3,4,5]))
+        print(self.sim._bytes_to_val([6,7,8,9,0]))
+
+        print(self.sim._bytes_to_val([1,2,3,4,0]))
+        print(self.sim._bytes_to_val([1,0,3,4,5]))
+        print(self.sim._bytes_to_val([1,9,0,4,5]))
+        print(self.sim._bytes_to_val([0,2,3,4,5]))
+
+        # Bytes are equal to (-)[1 2 3 4 5]
+        self.sim.memory[0] = Word(-17314053)
+        self.sim.memory[1] = Word(-17314053)
+        self.sim.memory[2] = Word(-17314053)
+        self.sim.memory[3] = Word(-17314053)
+        self.sim.memory[4] = Word(-17314053)
+        self.sim.memory[5] = Word(-17314053)
+
+        # Bytes are equal to (+)[6 7 8 9 0]
+        test_register = Register(5)
+        test_register.value = 102531648 
+
+        self.sim.ST(test_register, 0, (0, 5))
+        self.assertEqual(self.sim.memory[0].value, 102531648)
+        self.assertEqual(self.sim.memory[0].sign, Sign.POS)
+
+        self.sim.ST(test_register, 1, (1, 5))
+        self.assertEqual(self.sim.memory[1].value, 102531648)
+        self.assertEqual(self.sim.memory[1].sign, Sign.NEG)
+
+        self.sim.ST(test_register, 2, (5, 5))
+        self.assertEqual(self.sim.memory[2].value, 17314048)
+        self.assertEqual(self.sim.memory[2].sign, Sign.NEG)
+
+        self.sim.ST(test_register, 3, (2, 2))
+        self.assertEqual(self.sim.memory[3].value, 16789765)
+        self.assertEqual(self.sim.memory[3].sign, Sign.NEG)
+
+        self.sim.ST(test_register, 4, (2, 3))
+        self.assertEqual(self.sim.memory[4].value, 19136773)
+        self.assertEqual(self.sim.memory[4].sign, Sign.NEG)
+
+        self.sim.ST(test_register, 5, (0, 1))
+        self.assertEqual(self.sim.memory[5].value, 536837)
+        self.assertEqual(self.sim.memory[5].sign, Sign.POS)
+
+
     def test_ADD(self):
         self.sim.memory[10] = Word(400)
         self.sim.memory[11] = Word(532)
