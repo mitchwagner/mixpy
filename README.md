@@ -1,11 +1,14 @@
-# MIX Simulator 
-
+# MIXpy
 MIX is a hypothetical computer described by Donald Knuth for
-instructive use in The Art of Computer Programming. This software
-provides a simulator for MIX, written in Python 3, as well as an
-assembler for the MIX Assembly Language (MIXAL).
+instructive use in The Art of Computer Programming. MIXpy (pronounced
+mix-pea) provides a simulator for MIX, as well as an assembler for the
+MIX Assembly Language (MIXAL). MIXpy is written in Python 3, and is
+available through PyPI as "mixpy".
 
-## Development Plan 
+## MIX Simulator 
+MIXpy realizes the MIX architecture as interactive Python objects.
+
+### Development Plan 
 
 MIX is an instruction set architecture; Knuth does not express a
 canonical microarchitecture for its implementation. As such, the scope
@@ -17,6 +20,7 @@ etc., are not of this project's concern. Such low-level details,
 though intellectually interesting, are immaterial to the consideration
 of MIX itself.
 
+#### IO 
 In the first iteration of the simulated machine, the act of reading or
 writing to an external device will be presented as a blocking
 operation (that occurs instantaneously). This should have no practical
@@ -26,6 +30,16 @@ of times) an IO operation will take to complete. Writing and reading
 will still occur instantaneously in the background, but this
 additional feature will provide a means of exposing incorrect programs
 that read or write at inappropriate junctures.
+
+## MIXAL Assembler
+MIXAL ("Mix Assembly Language") is a symbolic language designed to
+make "MIX programs considerably easier to read and to write, and to
+save the programmer from worrying about tediuos clerical details that
+often lead to unnecessary errors".
+
+### Syntax
+MIXpy recognizes MIXAL programs that conform to the 
+[syntax specified by the GNU MIX Development Kit (MDK)](https://www.gnu.org/software/mdk/manual/html_node/Basic-structure.html#Basic-structure).
 
 ## Contribution Guidelines
 
