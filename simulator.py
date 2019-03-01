@@ -2,7 +2,7 @@
 Simulate a MIX computer.
 '''
 
-from typing import List, Tuple, NewType, Optional
+from typing import List, Dict, Tuple, NewType, Optional
 from enum import Enum
 
 # A "byte" must be capable of holding between 64 and 100 distinct
@@ -50,12 +50,21 @@ class Word:
             self.sign = Sign.NEG
 
 
+# TODO: At the moment, I'm going to be enforcing the size of the
+# register (A and X vs. the Is and J) in the simulator. It would be
+# better to abstract that functionality and put it here. In fact, it's
+# not necessarily a good idea to implement in the simulator as a first
+# approximation.
+
+# Note: the J register behaves as if it is always positive.
 class Register:
     '''
-    Registers consist of two bytes and a sign
+    There are two register variants: five-byte registers and two-byte
+    registers. In addition, every register has a sign (+ or -).
     '''
     sign: Sign
     value: int
+
 
     def __init__(self):
         self.sign = Sign.POS
@@ -79,6 +88,13 @@ class IODevice:
         self.blocks = blocks
 
 
+    # TODO: there is a difference between, say, paper tape, which
+    # writes out 5 characters at a time, and a disk/drum, which writes
+    # out a single word. There may be a need for further subclassing.
+    def write_to_file(self, handle):
+        None 
+
+
 class TapeUnit(IODevice):
     _block_size = 100
 
@@ -100,6 +116,11 @@ class LinePrinter(IODevice):
 
 
 class TypewriterTerminal(IODevice):
+    '''
+    If a typewriter is used for input, the "carriage return" typed at
+    the end of each line cuases the remainder of that line to be
+    filled with blanks.
+    '''
     _block_size = 14
 
 
@@ -108,24 +129,43 @@ class PaperTape(IODevice):
 
 
 class UndefinedRegisterException(Exception):
-   pass
+    '''
+    Attempting to use an undefined (index) register 
+    '''
+    pass
+
+
+class UndefinedCharacterException(Exception):
+    '''
+    Erroneous attempt to convert a number, for which no character
+    is defined, into a character.
+    '''
+    pass
+
+
+class MemoryLimitExceededException(Exception):
+    '''
+    Reading/writing beyond memory unit boundaries
+    '''
+    pass
+
+
+class ByteSizeException(Exception):
+    pass
 
 
 class Simulator:
     '''
     Provides a virtual MIX computer.
     '''
-    rA: Register 
-    rX: Register 
+    
+    # A dictionary allowing clean lookup of all registers
+    registers : Dict[int, Register] 
 
-    i1: Register 
-    i2: Register 
-    i3: Register 
-    i4: Register 
-    i5: Register
-    i6: Register
-
-    rJ: Register
+    # Shorthand variables particular registers 
+    rA : Register
+    rX : Register
+    rJ : Register
 
     # Tape and disk storage devices read full words (five bytes and a sign)
     tape0: Optional[TapeUnit]
@@ -159,23 +199,33 @@ class Simulator:
     # Program Counter
     rP: Register   
 
-    byte_size: int
+    max_byte_size: int
     overflow_toggle: bool 
     is_halted: bool
     comparison_indicator: Comparison 
 
     time = 0
 
-
-    def __init__(self, byte_size=64):
+    
+    def __init__(self, max_byte_size=64):
         '''
         Initialize the MIX computer.
 
-        :param byte_size: Size of a byte (in binary bits)
+        :param byte_size: maximum value of a byte 
         '''
-        self.byte_size = byte_size 
-
+        
+        self._set_max_byte_size(max_byte_size)
         self.init_machine()
+
+
+    def _set_max_byte_size(self, size):
+        self._verify_max_byte_size(size)
+        self.max_byte_size = size 
+
+
+    def _verify_max_byte_size(self, size):
+        if size < BYTE_MIN or size > BYTE_MAX:
+            raise ByteSizeException
 
 
     def init_machine(self):
@@ -205,90 +255,56 @@ class Simulator:
 
     def init_registers(self):
         '''
-        Initialize machine registers. All registers have a sign bit,
-        though the J-register behaves as though its sign bit is always
-        positive.
-
-        The A and X registers are both five bytes wide; the remaining
-        registers are two bytes wide.
+        Initialize machine registers.
         '''
-        self.rA = Word()
-        self.rX = Word()
 
-        self.r1 = Word()
-        self.r2 = Word()
-        self.r3 = Word()
-        self.r4 = Word()
-        self.r5 = Word()
-        self.r6 = Word()
+        self.registers = {
+            "A": Register(),
+            "X": Register(),
+            "J": Register(),
+            1 : Register(),
+            2 : Register(),
+            3 : Register(),
+            4 : Register(),
+            5 : Register(),
+            6 : Register()
+        }
 
-        self.rJ = Word()
+        self.rA = self.registers['A']
+        self.rX = self.registers['X']
+        self.rJ = self.registers['J']
+
         self.rP = Word()
 
 
-    def attach_IO_device(self, unit_num: int , device: IODevice):
-        '''
-        :param unit_num: the unit port to attach the device to
-        :param device: the device instance to attach to the simulator 
-        '''
-        None
-        
-
-    def detach_IO_device(self, unit_num): 
-        None
-
-
-    def start(self, input_device=16):
+    def start(self, boot_device=16):
         '''
         Loads a boot sequence from the specified input device
         '''
-        # Run the boot sequence
-            # Load a single memory unit from the specified storage device
-            # into memory
-            # set Jump location
-            # begin 
 
+        self.boot(boot_device=boot_device)
         self.cycle()
 
-
-    def _get_bytes(self, value):
-        quotients = []
-        remainders = []
-
-        # Full words are five bytes long
-        for i in range(5):
-            quotients.append(value)
-            value = value // self.byte_size
-
-        quotients.reverse()
-
-        for q in quotients:
-            remainders.append(q % self.byte_size)
-
-        return remainders
-
     
-    def get_field_val(self, start, end, word):
-        start = start - 1
+    def boot(self, boot_device=16):
+        '''
+        0) Set J register to 0, and clear the overflow toggle
+        1) Read one card into memory, starting at memory location 0000
+        2) Once card is loaded, begin execution from 0000
+        '''
+        None
 
-        bs = self._get_bytes(word.value)
-        bs = bs[start:end]
-
-        num = 0
-        place = 0
-        for b in reversed(bs):
-            num = num + b * self.byte_size ** place
-            place += 1
-        
-        return num
-    
 
     def cycle(self):
-        # TODO: track/increment time
-
+        '''
+        Execute until a halting instruction is processed
+        '''
         while not self.is_halted:
             i = self.get_next_instruction()
-            self.instruction_dispatch(i)
+            parts = self.parse_instruction(i)
+
+            increment_time(parts)
+            self.instruction_dispatch(parts)
 
 
     def get_next_instruction(self):
@@ -300,6 +316,7 @@ class Simulator:
         return i 
 
 
+    # TODO: it might be cleaner to make this return an actual type 
     def parse_instruction(self, instruction: Word):
         sign = instruction.sign 
         A = self.get_field_val(1, 2, instruction)
@@ -309,174 +326,156 @@ class Simulator:
 
         return ({'sign':sign, 'A':A, 'I':I, 'F':F, 'C':C})
 
+    
+    def get_field_val(self, start, end, word):
+        '''
+        Given a word and a field, return the value stored
+        in the specified field.
+        '''
+        start = start - 1
+
+        bs = self._get_bytes(word.value)
+        bs = bs[start:end]
+
+        num = 0
+        place = 0
+        for b in reversed(bs):
+            num = num + b * self.max_byte_size ** place
+            place += 1
+        
+        return num
+
+
+    def _get_bytes(self, value):
+        '''
+        Transform a (positive) integer value into a list of bytes 
+        '''
+        quotients = []
+        remainders = []
+
+        # Full words are five bytes long
+        for i in range(5):
+            quotients.append(value)
+            value = value // self.max_byte_size
+
+        quotients.reverse()
+
+        for q in quotients:
+            remainders.append(q % self.max_byte_size)
+
+        return remainders
+
+
+    def increment_time(self, parsed_instruction) -> None:
+        '''
+        Increment the total running time of the computer
+        '''
+        parameter = self.get_time_parameter(parsed_instruction)
+
+        op_code = parsed_instruction['C'] 
+        self.time += time_map[op_code](parameter) 
+
+
+    def get_time_parameter(self, parsed_instruction) -> int:
+        '''
+        A very few instructions require an amount of time that is a
+        function of some variable. This method computes that variable,
+        returning -1 in the instances where no variable is necessary.
+        '''
+        if op_code == 7:
+            return parsed_instruction['F']
+
+        # TODO: Implement logic
+        elif op_code == 35 or op_code == 36 or op_code == 37:
+            return 1000
+
+        else:
+            return -1
+
+
+    def instruction_dispatch(self, parsed_instruction):
+        '''
+        Select and execute the function implementing the indicated
+        instruction
+        '''
+
+        sign = parsed_instruction['sign']
+        A = parsed_instruction['A']
+        I = parsed_instruction['I']
+        F = self.get_field(parsed_instructions['F'])
+        C = parsed_instructions['C']
+
+        address = A.value * sign.value
+
+        address = self.index_from_address(address, I)
+
+        params = {
+            'address': address,
+            'F': F,
+            'C': C
+        }
+
+        self.instr_map[C](**params)
+
 
     def get_field(self, F) -> Tuple[int, int]:
         return (F // 8, F % 8)
 
 
-    def instruction_dispatch(instruction: Word):
-        parts = parse_instruction(instruction)
-        sign = parts['sign']
-        A = parts['A']
-        I = parts['I']
-        F = get_field(parts['F'])
-        C = parts['C']
-
-        address = A.value * sign.value
-
-        if I == 1:
-            address += i1.value
-
-        elif I == 2:
-            address += i2.value
-
-        elif I == 3:
-            address += i3.value
-
-        elif I == 4:
-            address += i4.value
-
-        elif I == 5:
-            address += i5.value
-
-        elif I == 6:
-            address += i6.value
-
+    def index_from_address(self, address, I) -> int:
         # TODO: Check for overflow and throw error if it occurs
+        register = self.registers[I]
+        address += register.value
 
-        self.instr_map[C](address=address, F=F)
+        return address
 
 
-    def LDA(self, address, F):
-        word = self.memory[address] 
+    def attach_IO_device(self, unit_num: int , device: IODevice):
+        '''
+        :param unit_num: the unit port to attach the device to
+        :param device: the device instance to attach to the simulator 
+        '''
+        None
+        
 
+    def detach_IO_device(self, unit_num): 
+        '''
+        :param unit_num: the port of the unit to detach
+        '''
+        None
+        
+    
+    # TODO: Do we need all parameters (C) here?
+    # TODO: We could use kwargs for ultimate flexibility. Investigate
+    # whether or not every instruction needs all or the same set of
+    # parameters 
+    def LD(self, register, address, F) -> None:
+        '''
+        LD instructions 
+        '''
+        word = self.memory[address]
         use_sign = False
+
         if F[0] == 0:
             F = (1, F[1])
             use_sign = True
-        
+
         if use_sign:
-            self.rA.sign = word.sign
+            register.sign = word.sign
         else:
-            self.rA.sign = Sign.POS
+            register.sign = Sign.POS
 
-        self.rA.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LD1(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            self.i1.sign = word.sign
-        else:
-            self.i1.sign = Sign.POS
-
-        self.i1.value = self.get_field_val(F[0], F[1], word)
+        register.value = self.get_field_val(F[0], F[1], word)
 
 
-
-    def LD2(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            self.i2.sign = word.sign
-        else:
-            self.i2.sign = Sign.POS
-
-        self.i2.value = self.get_field_val(F[0], F[1], word)
+    def LD_dispatch(self, address, F, C) -> None:
+        '''
+        Execute a LD instruction with the proper register
+        '''
+        None
 
 
-    def LD3(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            self.i3.sign = word.sign
-        else:
-            self.i3.sign = Sign.POS
-
-        self.i3.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LD4(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            self.i4.sign = word.sign
-        else:
-            self.i4.sign = Sign.POS
-
-        self.i4.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LD5(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            self.i5.sign = word.sign
-        else:
-            self.i5.sign = Sign.POS
-
-        self.i5.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LD6(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            self.i6.sign = word.sign
-        else:
-            self.i6.sign = Sign.POS
-
-        self.i6.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LDX(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            self.rX.sign = word.sign
-        else:
-            self.rX.sign = Sign.POS
-
-        self.rX.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LDAN(self, address, F):
+    def LDN(self, register, address, F) -> None:
         word = self.memory[address] 
 
         use_sign = False
@@ -486,190 +485,43 @@ class Simulator:
         
         if use_sign:
             if word.sign == Sign.POS:
-                self.rA.sign = Sign.NEG
+                register.sign = Sign.NEG
             else:
-                self.rA.sign = Sign.POS
+                register.sign = Sign.POS
         else:
-            self.rA.sign = Sign.NEG
+            register.sign = Sign.NEG
 
-        self.rA.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LDXN(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            if word.sign == Sign.POS:
-                self.rX.sign = Sign.NEG
-            else:
-                self.rX.sign = Sign.POS
-        else:
-            self.rX.sign = Sign.NEG
-
-        self.rX.value = self.get_field_val(F[0], F[1], word)
+        register.value = self.get_field_val(F[0], F[1], word)
 
 
-    def LD1N(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            if word.sign == Sign.POS:
-                self.i1.sign = Sign.NEG
-            else:
-                self.i1.sign = Sign.POS
-        else:
-            self.i1.sign = Sign.NEG
-
-        self.i1.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LD2N(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            if word.sign == Sign.POS:
-                self.i2.sign = Sign.NEG
-            else:
-                self.i2.sign = Sign.POS
-        else:
-            self.i2.sign = Sign.NEG
-
-        self.i2.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LD3N(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            if word.sign == Sign.POS:
-                self.i3.sign = Sign.NEG
-            else:
-                self.i3.sign = Sign.POS
-        else:
-            self.i3.sign = Sign.NEG
-
-        self.i3.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LD4N(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            if word.sign == Sign.POS:
-                self.i4.sign = Sign.NEG
-            else:
-                self.i4.sign = Sign.POS
-        else:
-            self.i4.sign = Sign.NEG
-
-        self.i4.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LD5N(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            if word.sign == Sign.POS:
-                self.i5.sign = Sign.NEG
-            else:
-                self.i5.sign = Sign.POS
-        else:
-            self.i5.sign = Sign.NEG
-
-        self.i5.value = self.get_field_val(F[0], F[1], word)
-
-
-    def LD6N(self, address, F):
-        word = self.memory[address] 
-
-        use_sign = False
-        if F[0] == 0:
-            F = (1, F[1])
-            use_sign = True
-        
-        if use_sign:
-            if word.sign == Sign.POS:
-                self.i6.sign = Sign.NEG
-            else:
-                self.i6.sign = Sign.POS
-        else:
-            self.i6.sign = Sign.NEG
-
-        self.i6.value = self.get_field_val(F[0], F[1], word)
-
-
-    def STA(self):
+    def LDN_dispatch(self, address, F, C) -> None:
+        '''
+        Execute a LDN instruction with the proper register
+        '''
         raise NotImplementedError 
 
 
-    def STX(self):
+    def ST(self, register, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def ST1(self):
+    def ST_dispatch(self, address, F, C) -> None:
+        '''
+        Execute a ST instruction with the proper register
+        '''
+        None
+
+
+    def STJ(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def ST2(self):
-        raise NotImplementedError 
-
-
-    def ST3(self):
-        raise NotImplementedError 
-
-
-    def ST4(self):
-        raise NotImplementedError 
-
-
-    def ST5(self):
-        raise NotImplementedError 
-
-
-    def ST6(self):
-        raise NotImplementedError 
-
-
-    def STJ(self):
-        raise NotImplementedError 
-
-
-    def STZ(self, address, F):
+    def STZ(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
     # TODO: Overflow
-    def ADD(self, address, F):
+    def ADD(self, address, F) -> None:
         '''
         Add the field from the specified address to register A
         '''
@@ -698,7 +550,7 @@ class Simulator:
 
 
     # TODO: Overflow
-    def SUB(self, address, F):
+    def SUB(self, address, F, C) -> None:
         '''
         Subtract the field from the specified address to register A
         '''
@@ -725,271 +577,204 @@ class Simulator:
 
         self.rA.value = abs(self.rA.value)
 
+
     # TODO: Overflow
-    def MUL(self, address, F):
+    def MUL(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def DIV(self, address, F):
+    def DIV(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def ENTA(self, address, F):
+    def address_transfer_dispatch(self, address, F, C):
+        # Switch on C to get the register
+        # Switch on F to get the operation
         raise NotImplementedError 
 
 
-    def ENTX(self, address, F):
+    def INC(self, register, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def ENTi(self, address, F):
+    def DEC(self, register, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def ENNA(self):
+    def ENT(self, register, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def ENNi(self, i):
+    def ENN(self, register, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def INCA(self):
+    def CMP(self, register, F, C) -> None:
         raise NotImplementedError 
 
 
-    def INCX(self):
+    def CMP_dispatch(self, address, F, C):
         raise NotImplementedError 
 
 
-    def INCi(self, i):
+    def JUMP(self, register, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def DECA(self):
+    def JUMP_dispatch(self, address, F, C) -> None:
+        # Switch on C to get the register
+        # Switch on F to
         raise NotImplementedError 
 
 
-    def DECX(self):
+    def JMP(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def DECi(self, i):
-        raise NotImplementedError 
-
-    
-    def CMPA(self):
+    def JSJ(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def CMPX(self):
+    def JOV(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def CMP1(self, i):
+    def JNOV(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def CMP2(self, i):
+    def JL(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def CMP3(self, i):
+    def JE(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def CMP4(self, i):
+    def JG(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def CMP5(self, i):
-        raise NotImplementedError 
-
-
-    def CMP6(self, i):
-        raise NotImplementedError 
-
-
-    def JUMPA(self):
-        raise NotImplementedError 
-        
-
-    def JUMP1(self, i):
-        raise NotImplementedError 
-
-
-    def JUMP2(self, i):
-        raise NotImplementedError 
-
-
-    def JUMP3(self, i):
-        raise NotImplementedError 
-
-
-    def JUMP4(self, i):
-        raise NotImplementedError 
-
-
-    def JUMP5(self, i):
-        raise NotImplementedError 
-
-
-    def JUMP6(self, i):
-        raise NotImplementedError 
-
-
-    def JUMPX(self, ):
-        raise NotImplementedError 
-
-
-    def JMP(self):
-        raise NotImplementedError 
-
-
-    def JSJ(self):
-        raise NotImplementedError 
-
-
-    def JOV(self):
-        raise NotImplementedError 
-
-
-    def JNOV(self):
-        raise NotImplementedError 
-
-
-    def JL(self):
-        raise NotImplementedError 
-
-
-    def JE(self):
-        raise NotImplementedError 
-
-
-    def JG(self):
-        raise NotImplementedError 
-
-
-    def JGE(self):
+    def JGE(self, address, F, C) -> None:
         raise NotImplementedError 
 
          
-    def JNE(self):
+    def JNE(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JLE(self):
+    def JLE(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JAN(self):
+    def JAN(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JAZ(self):
+    def JAZ(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JAP(self):
+    def JAP(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JANN(self):
+    def JANN(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JANZ(self):
+    def JANZ(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JANP(self):
+    def JANP(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JXN(self):
+    def JXN(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JXZ(self):
+    def JXZ(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JXP(self):
+    def JXP(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JXNN(self):
+    def JXNN(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JXNZ(self):
+    def JXNZ(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JXNP(self):
+    def JXNP(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JiN(self, i):
+    def JiN(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JiZ(self, i):
+    def JiZ(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JiP(self, i):
+    def JiP(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JiNN(self, i):
+    def JiNN(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JiNZ(self, i):
+    def JiNZ(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JiNP(self, i):
+    def JiNP(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def SLA(self):
+    def SLA(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def SRA(self):
+    def SRA(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def SLAX(self):
+    def SLAX(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def SRAX(self):
+    def SRAX(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def SLC(self):
+    def SLC(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def SRC(self):
+    def SRC(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def MOVE(self):
+    def MOVE(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def NOP(self):
+    def NOP(self, address, F, C) -> None:
         '''
         Do nothing
         '''
         None
 
 
-    def HLT(self):
+    def HLT(self, address, F, C) -> None:
         '''
         Pauses a machine; when restarted, the effect is equivalent to
         a NOP instruction.
@@ -997,7 +782,7 @@ class Simulator:
         self.is_halted = True
 
 
-    def restart(self):
+    def restart(self) -> None:
         '''
         Restart a halted machine
         '''
@@ -1005,32 +790,62 @@ class Simulator:
         self.cycle()
 
 
-    def IN(self):
+    def IN(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def OUT(self):
+    def OUT(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def IOC(self):
+    def IOC(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JRED(self):
+    def JRED(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def JBUS(self):
+    def JBUS(self, address, F, C) -> None:
         raise NotImplementedError 
 
 
-    def NUM(self):
-        raise NotImplementedError 
+    def NUM(self, address, F, C) -> None:
+        '''
+        Change a character code into a numeric code. 
+        
+        Registers A and X are assumed to contain a 10-byte number in
+        character code; the NUM instruction sets the magnitude of rA
+        equal to the numerical value of this number. The value of rX
+        and the sign of rA are unchanged. 
+        
+        Bytes 00, 10, 20, ...  convert to the digit zero; bytes 01,
+        11, 21, ... to the digit one; etc. 
+        
+        Overflow is possible, and in this case, the remainder module
+        b^5 is retained, where b is the byte size.
+        '''
+                
+        a_bytes = self._get_bytes(self.rA.value)
+        x_bytes = self._get_bytes(self.rX.value)
+
+        num = 0
+        power = 0
+
+        for b in a_bytes:
+            num = num + b * self.byte_size ** power 
+            place += 1
+
+        for b in x_bytes:
+            num = num + b * self.byte_size ** power 
+            place += 1
+
+        num = num % self.byte_size ** 5
 
 
-    def CHAR(self):
+    def CHAR(self) -> None:
         raise NotImplementedError 
+
 
     # Map instruction codes to the function implementing each instruction
     instr_map = {
@@ -1040,130 +855,131 @@ class Simulator:
         3: MUL,
         4: DIV,
         5: None, # This maps to num, char, and halt
-        6: None, # This maps to shift (sla, sra, slax, srax, slc, src
+        6: None, # This maps to shift (sla, sra, slax, srax, slc, src)
         7: MOVE,
-        8: LDA,
-        9: LD1,
-        10: LD2,
-        11: LD3,
-        12: LD4,
-        13: LD5,
-        14: LD6,
-        15: LDX,
-        16: LDAN,
-        17: LD1N,
-        18: LD2N,
-        19: LD3N,
-        20: LD4N,
-        21: LD5N,
-        22: LD6N,
-        23: LDXN,
-        24: STA,
-        25: ST1,
-        26: ST2,
-        27: ST3,
-        28: ST4,
-        29: ST5,
-        30: ST6,
-        31: STX,
-        32: STJ,
-        33: STZ,
+        8: LD_dispatch,
+        9: LD_dispatch,
+        10: LD_dispatch,
+        11: LD_dispatch,
+        12: LD_dispatch,
+        13: LD_dispatch,
+        14: LD_dispatch,
+        15: LD_dispatch,
+        16: LDN_dispatch,
+        17: LDN_dispatch,
+        18: LDN_dispatch,
+        19: LDN_dispatch,
+        20: LDN_dispatch,
+        21: LDN_dispatch,
+        22: LDN_dispatch,
+        23: LDN_dispatch,
+        24: ST_dispatch,
+        25: ST_dispatch,
+        26: ST_dispatch,
+        27: ST_dispatch,
+        28: ST_dispatch,
+        29: ST_dispatch,
+        30: ST_dispatch,
+        31: ST_dispatch,
+        32: ST_dispatch,
+        33: ST_dispatch,
         34: JBUS,
         35: IOC,
         36: IN,
         37: OUT,
         38: JRED,
         39: None, # This maps to various jump instructions
-        40: JUMPA,
-        41: JUMP1,
-        42: JUMP2,
-        43: JUMP3,
-        44: JUMP4,
-        45: JUMP5,
-        46: JUMP6,
-        47: JUMPX, 
-        48: None, # Maps to INCA, DECA, ENTA, ENNA
-        49: None, # Maps to INCi, DECi, ENTi, and ENNi
-        50: None, # Maps to INCi, DECi, ENTi, and ENNi
-        51: None, # Maps to INCi, DECi, ENTi, and ENNi
-        52: None, # Maps to INCi, DECi, ENTi, and ENNi
-        53: None, # Maps to INCi, DECi, ENTi, and ENNi
-        54: None, # Maps to INCi, DECi, ENTi, and ENNi
-        55: None, # Maps to INCX, DECX, ENTX, ENNX
-        56: CMPA,
-        57: CMP1,
-        58: CMP2,
-        59: CMP3,
-        60: CMP4,
-        61: CMP5,
-        62: CMP6,
-        63: CMPX
+        40: JUMP_dispatch,
+        41: JUMP_dispatch,
+        42: JUMP_dispatch,
+        43: JUMP_dispatch,
+        44: JUMP_dispatch,
+        45: JUMP_dispatch,
+        46: JUMP_dispatch,
+        47: JUMP_dispatch,
+        48: address_transfer_dispatch,
+        49: address_transfer_dispatch,
+        50: address_transfer_dispatch,
+        51: address_transfer_dispatch,
+        52: address_transfer_dispatch,
+        53: address_transfer_dispatch,
+        54: address_transfer_dispatch,
+        55: address_transfer_dispatch,
+        56: CMP_dispatch,
+        57: CMP_dispatch,
+        58: CMP_dispatch,
+        59: CMP_dispatch,
+        60: CMP_dispatch,
+        61: CMP_dispatch,
+        62: CMP_dispatch,
+        63: CMP_dispatch
     }
 
-    # Map instruction codes to the length of time each instruction takes
+    # Map instruction codes to a function computing the amount of
+    # time the instruction will take to execute.
     time_map = {
-        0: 1,
-        1: 2,
-        2: 2,
-        3: 10,
-        4: 12,
-        5: 10,
-        6: 2,
-        7: 1, # TODO: Special
-        8: 2,
-        9: 2,
-        10: 2,
-        11: 2,
-        12: 2,
-        13: 2,
-        14: 2,
-        15: 2,
-        16: 2,
-        17: 2,
-        18: 2,
-        19: 2,
-        20: 2,
-        21: 2,
-        22: 2,
-        23: 2,
-        24: 2,
-        25: 2,
-        26: 2,
-        27: 2,
-        28: 2,
-        29: 2,
-        30: 2,
-        31: 2,
-        32: 2,
-        33: 2,
-        34: 1,
-        35: 1, # TODO: Special
-        36: 1, # TODO: Special
-        37: 1, # TODO: Special
-        38: 1,
-        39: 1,
-        40: 1,
-        41: 1,
-        42: 1,
-        43: 1,
-        44: 1,
-        45: 1,
-        46: 1,
-        47: 1,
-        48: 1,
-        49: 1,
-        50: 1,
-        51: 1,
-        52: 1,
-        53: 1,
-        54: 1,
-        55: 1,
-        56: 2,
-        57: 2,
-        58: 2,
-        59: 2,
-        60: 2,
-        61: 2,
-        62: 2,
-        63: 2 
+        0: lambda  _: 1,
+        1: lambda  _: 2,
+        2: lambda  _: 2,
+        3: lambda  _: 10,
+        4: lambda  _: 12,
+        5: lambda  _: 10,
+        6: lambda  _: 2,
+        7: lambda  f: 1 + 2*f,
+        8: lambda  _: 2,
+        9: lambda  _: 2,
+        10: lambda _: 2,
+        11: lambda _: 2,
+        12: lambda _: 2,
+        13: lambda _: 2,
+        14: lambda _: 2,
+        15: lambda _: 2,
+        16: lambda _: 2,
+        17: lambda _: 2,
+        18: lambda _: 2,
+        19: lambda _: 2,
+        20: lambda _: 2,
+        21: lambda _: 2,
+        22: lambda _: 2,
+        23: lambda _: 2,
+        24: lambda _: 2,
+        25: lambda _: 2,
+        26: lambda _: 2,
+        27: lambda _: 2,
+        28: lambda _: 2,
+        29: lambda _: 2,
+        30: lambda _: 2,
+        31: lambda _: 2,
+        32: lambda _: 2,
+        33: lambda _: 2,
+        34: lambda _: 1,
+        35: lambda t: t + 1, # TODO: t is a device-dependent interlock time
+        36: lambda t: t + 1, # TODO: t is a device-dependent interlock time
+        37: lambda t: t + 1, # TODO: t is a device-dependent interlock time
+        38: lambda _: 1,
+        39: lambda _: 1,
+        40: lambda _: 1,
+        41: lambda _: 1,
+        42: lambda _: 1,
+        43: lambda _: 1,
+        44: lambda _: 1,
+        45: lambda _: 1,
+        46: lambda _: 1,
+        47: lambda _: 1,
+        48: lambda _: 1,
+        49: lambda _: 1,
+        50: lambda _: 1,
+        51: lambda _: 1,
+        52: lambda _: 1,
+        53: lambda _: 1,
+        54: lambda _: 1,
+        55: lambda _: 1,
+        56: lambda _: 2,
+        57: lambda _: 2,
+        58: lambda _: 2,
+        59: lambda _: 2,
+        60: lambda _: 2,
+        61: lambda _: 2,
+        62: lambda _: 2,
+        63: lambda _: 2,
     }
