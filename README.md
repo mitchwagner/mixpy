@@ -28,6 +28,16 @@ additional feature will provide a means of exposing incorrect programs
 that read or write at inappropriate junctures.
 
 ## Contribution Guidelines
+
+### Python Version
+MIXpy targets Python 3, specifically CPython 3.7.2.
+
+### External Libraries
+There is, in general, no compelling reason to introduce dependencies
+for MIXpy: those defined in `requirements.txt` concern development and
+thus are orthogonal to execution at runtime.
+
+### Method Order
 - Function should be implemented, as much as possible, in
   "call-stack order", e.g.:
 
