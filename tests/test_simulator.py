@@ -1,6 +1,6 @@
 import unittest
 
-from simulator import Simulator, Word, Sign
+from simulator import Simulator, Sign, Word, Register
 
 class TestSimulator(unittest.TestCase):
     
@@ -30,30 +30,34 @@ class TestSimulator(unittest.TestCase):
         self.assertEqual(self.sim.get_field_val(5, 5, cell), 1)
 
 
-    def test_LDA(self):
+    def test_LD(self):
         self.sim.memory[43] = Word(300)
         self.sim.memory[86] = Word(-30)
 
-        self.sim.LDA(43, (0, 5))
-        self.assertEqual(self.sim.rA.value, 300)
-        self.assertEqual(self.sim.rA.sign, Sign.POS)
+        test_register = Register()
 
-        self.sim.LDA(86, (0, 5))
-        self.assertEqual(self.sim.rA.value, 30)
-        self.assertEqual(self.sim.rA.sign, Sign.NEG)
+        self.sim.LD(test_register, 43, (0, 5))
+        self.assertEqual(test_register.value, 300)
+        self.assertEqual(test_register.sign, Sign.POS)
+
+        self.sim.LD(test_register, 86, (0, 5))
+        self.assertEqual(test_register.value, 30)
+        self.assertEqual(test_register.sign, Sign.NEG)
 
 
-    def test_LDAN(self):
+    def test_LDN(self):
         self.sim.memory[75] = Word(56)
         self.sim.memory[92] = Word(-4000)
 
-        self.sim.LDAN(75, (0, 5))
-        self.assertEqual(self.sim.rA.value, 56)
-        self.assertEqual(self.sim.rA.sign, Sign.NEG)
+        test_register = Register()
 
-        self.sim.LDAN(92, (0, 5))
-        self.assertEqual(self.sim.rA.value, 4000)
-        self.assertEqual(self.sim.rA.sign, Sign.POS)
+        self.sim.LDN(test_register, 75, (0, 5))
+        self.assertEqual(test_register.value, 56)
+        self.assertEqual(test_register.sign, Sign.NEG)
+
+        self.sim.LDN(test_register, 92, (0, 5))
+        self.assertEqual(test_register.value, 4000)
+        self.assertEqual(test_register.sign, Sign.POS)
 
 
     def test_ADD(self):
