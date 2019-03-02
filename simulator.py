@@ -10,9 +10,6 @@ from enum import Enum
 BYTE_MIN = 64
 BYTE_MAX = 100
 
-# MIX operations are concerned with the value of a MIX byte: the
-# details of the implementation are transparent as far as a MIX
-# programmer is concerned.
 class Sign(Enum):
     '''
     Each register and memory cell has a 1-bit sign indicator
@@ -204,7 +201,6 @@ class Simulator:
 
     time = 0
 
-    
     def __init__(self, max_byte_size=64):
         '''
         Initialize the MIX computer.
@@ -569,7 +565,6 @@ class Simulator:
         '''
 
         # 0) Figure out what to do about the sign 
-
         F = self.get_field_specification(F)
 
         if F[0] == 0:
@@ -605,7 +600,10 @@ class Simulator:
         With STJ, the normal field specification for F is (0:2), not
         (0:5)
         '''
-        raise NotImplementedError 
+
+        # TODO: Check that field specification is valid (here and
+        # elsewhere)
+        self.ST(self.rJ, address, F)
 
 
     def STZ(self, address, F, C) -> None:
@@ -613,10 +611,12 @@ class Simulator:
         Same as ST, except that plus zero is stored. That is, the
         specified field of the specified address is cleared to zero. 
         '''
-        raise NotImplementedError 
+        zero_reg = Register() 
+        self.ST(zero_reg, address, F)
 
 
-    # TODO: Overflow
+    # TODO: Handle overflow in Register class
+    # TODO: Set overflow toggle
     def ADD(self, address, F) -> None:
         '''
         Add the field from the specified address to register A
@@ -646,7 +646,8 @@ class Simulator:
         self.rA.value = abs(self.rA.value)
 
 
-    # TODO: Overflow
+    # TODO: Handle overflow in Register class
+    # TODO: Set overflow toggle
     def SUB(self, address, F, C) -> None:
         '''
         Subtract the field from the specified address to register A
@@ -677,12 +678,45 @@ class Simulator:
         self.rA.value = abs(self.rA.value)
 
 
-    # TODO: Overflow
+    # TODO: Handle overflow in Register class
+    # TODO: Set overflow toggle
     def MUL(self, address, F, C) -> None:
+        '''
+        The 10-byte product (rA * value at address) replaces the
+        values stored in registers rA and rX (rA holds the more significant
+        bytes). The signs of rA and rX are both set to the signs of
+        the product.
+        '''
+        # First, get the product
+
+        # Then, convert to bytes
+
+        # Then, chop up bytes
+
+        # Then, set values of registers (Register class should handle
+        # overflow). If there is overflow, set the overflow toggle.
+
+        # Finally, set signs of registers
+
         raise NotImplementedError 
 
 
+    # TODO: Handle overflow in Register class
+    # TODO: Set overflow toggle
     def DIV(self, address, F, C) -> None:
+        '''
+        The value of rA and rX, treated as the 10-byte number rAX with
+        the sign of rA, is divided by the value stored in the
+        specified address. If the divisor is 0 or if the quotient is
+        more than five bytes in magnitude (equivalent to |rA| >=
+        |divisor|), the result is undefined and the overflow toggle is
+        set. Otherwise, the quotient is placed in rA, and the
+        remainder is placed in rX. The sign of rA afterwards is the
+        sign of the quotient, and the sign of rX is the previous sign
+        of rA.
+        '''
+        # First,
+
         raise NotImplementedError 
 
 
