@@ -12,7 +12,10 @@ MIXpy realizes the MIX architecture as a collection of Python objects.
 MIXAL ("Mix Assembly Language") is a symbolic language designed to
 make "MIX programs considerably easier to read and to write, and to
 save the programmer from worrying about tedious clerical details that
-often lead to unnecessary errors".
+often lead to unnecessary errors". MIXpy provides a MIXAL assembler,
+also exposed as a Python object, to facilitate the generation of MIX
+machine code, including the boot and loading sequences a MIX computer
+requires to initialize and run a program.
 
 ## Documentation
 
