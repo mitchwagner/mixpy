@@ -7,16 +7,17 @@ available through PyPI as "mixpy".
 
 ## MIX Simulator 
 MIXpy realizes the MIX architecture as interactive Python objects.
-Documentation for the simulator can be found [here](docs/simulator.md).
+Documentation for the simulator can be found
+[here](docs/simulator/simulator.md).
 
 ## MIXAL Assembler
 MIXAL ("Mix Assembly Language") is a symbolic language designed to
 make "MIX programs considerably easier to read and to write, and to
 save the programmer from worrying about tedious clerical details that
 often lead to unnecessary errors". Documentation for the assembler can
-be found [here](docs/assembler.md).
+be found [here](docs/assembler/assembler.md).
 
 ## Contribution
 
-Please see the [contribution guidelines](docs/contribution.md) if you
+Please see the [contribution guidelines](contribution.md) if you
 wish to contribute!
