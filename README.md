@@ -14,7 +14,7 @@ MIXAL ("Mix Assembly Language") is a symbolic language designed to
 make "MIX programs considerably easier to read and to write, and to
 save the programmer from worrying about tedious clerical details that
 often lead to unnecessary errors". Documentation for the assembler can
-be found [here](docs/assembler.py).
+be found [here](docs/assembler.md).
 
 ## Contribution
 
