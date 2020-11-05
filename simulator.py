@@ -5,10 +5,12 @@ Simulate a MIX computer.
 from typing import List, Dict, Tuple, NewType, Optional
 from enum import Enum
 
+
 # A "byte" must be capable of holding between 64 and 100 distinct
 # values.
 BYTE_MIN = 64
 BYTE_MAX = 100
+
 
 class Sign(Enum):
     '''

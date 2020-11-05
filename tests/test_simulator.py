@@ -3,16 +3,13 @@ import unittest
 from simulator import Simulator, Sign, Word, Register
 
 class TestSimulator(unittest.TestCase):
-    
-    
+
     def setUp(self):
         self.sim = Simulator()
-
 
     def test_get_next_instruction(self):
         self.assertEqual(self.sim.get_next_instruction().value, 0)
         self.assertEqual(self.sim.rP.value, 1)
-
 
     def test_get_field_val(self):
         cell = Word()
@@ -29,7 +26,6 @@ class TestSimulator(unittest.TestCase):
         self.assertEqual(self.sim.get_field_val(4, 4, cell), 6)
         self.assertEqual(self.sim.get_field_val(5, 5, cell), 1)
 
-
     def test_LD(self):
         self.sim.memory[43] = Word(300)
         self.sim.memory[86] = Word(-30)
@@ -43,7 +39,6 @@ class TestSimulator(unittest.TestCase):
         self.sim.LD(test_register, 86, 5)
         self.assertEqual(test_register.value, 30)
         self.assertEqual(test_register.sign, Sign.NEG)
-
 
     def test_LDN(self):
         self.sim.memory[75] = Word(56)
@@ -59,10 +54,9 @@ class TestSimulator(unittest.TestCase):
         self.assertEqual(test_register.value, 4000)
         self.assertEqual(test_register.sign, Sign.POS)
 
-
-    def testST(self):
+    def test_ST(self):
         '''
-        Test the ST function using Knuth's examples from TAoCP. 
+        Test the ST function using Knuth's examples from TAoCP.
         '''
 
         print(self.sim._bytes_to_val([1,2,3,4,5]))
@@ -132,12 +126,10 @@ class TestSimulator(unittest.TestCase):
         self.assertEqual(self.sim.rA.value, 20)
         self.assertEqual(self.sim.rA.sign, Sign.NEG)
 
-
     def test_parse_instruction(self):
         cell = Word()
         #parts = self.sim.parse_instruction(cell)
         self.assertTrue(False)
-
 
     def test_instruction_dispatch(self):
         self.assertTrue(False)
