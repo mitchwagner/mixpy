@@ -8,9 +8,9 @@ In this section, a high-level overview of the MIX computer, as
 described by Knuth, is provided. It is divided into the following
 sub-sections:
 
-## II. MIXpy Simulator
+## II. MIXpy Emulator
 
-In Section II, implementation details of the simulator, as well as
+In Section II, implementation details of the emulator, as well as
 examples of its use, are provided.
 
 ## III. MIXpy Assembler
